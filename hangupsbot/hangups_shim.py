@@ -50,6 +50,9 @@ LegacySchema = {
     'MembershipChangeType' : {
         'JOIN': hangouts_pb2.MEMBERSHIP_CHANGE_TYPE_JOIN,
         'LEAVE': hangouts_pb2.MEMBERSHIP_CHANGE_TYPE_LEAVE },
+    'GroupLinkSharingChangeType' : {
+        'ON': hangouts_pb2.GROUP_LINK_SHARING_STATUS_ON,
+        'OFF': hangouts_pb2.GROUP_LINK_SHARING_STATUS_OFF },
     'ClientNotificationLevel' : {
         'UNKNOWN': hangouts_pb2.NOTIFICATION_LEVEL_UNKNOWN,
         'QUIET': hangouts_pb2.NOTIFICATION_LEVEL_QUIET,
@@ -68,3 +71,4 @@ schemas = namedtuplify(LegacySchema)
 
 SegmentType = schemas.SegmentType
 MembershipChangeType = schemas.MembershipChangeType
+GroupLinkSharingChangeType = schemas.GroupLinkSharingChangeType

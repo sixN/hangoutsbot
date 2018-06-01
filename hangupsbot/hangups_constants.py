@@ -90,6 +90,14 @@ class MembershipChangeType:
     LEAVE = hangouts_pb2.MEMBERSHIP_CHANGE_TYPE_LEAVE
 
 
+class GroupLinkSharingChangeType:
+
+    """Conversation link change type."""
+
+    ON = hangouts_pb2.GROUP_LINK_SHARING_STATUS_ON
+    OFF = hangouts_pb2.GROUP_LINK_SHARING_STATUS_OFF
+
+
 class ClientHangoutEventType:
 
     """Hangout event type."""

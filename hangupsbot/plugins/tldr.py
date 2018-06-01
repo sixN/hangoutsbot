@@ -10,6 +10,7 @@ tldr_echo_options = [
     "GLOBAL"
 ]
 
+
 def _initialise(bot):
     plugins.register_user_command(["tldr"])
     plugins.register_admin_command(["tldrecho"])
@@ -17,7 +18,7 @@ def _initialise(bot):
 
     # Set the global option
     if not bot.get_config_option('tldr_echo'):
-        bot.config.set_by_path(["tldr_echo"], 1) # tldr_echo_options[1] is "GROUP"
+        bot.config.set_by_path(["tldr_echo"], 1)  # tldr_echo_options[1] is "GROUP"
         bot.config.save()
 
 
@@ -26,12 +27,12 @@ def tldrecho(bot, event, *args):
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):
-        bot.memory.set_by_path(['conversations'],{})
-    if not bot.memory.exists(['conversations',event.conv_id]):
-        bot.memory.set_by_path(['conversations',event.conv_id],{})
+        bot.memory.set_by_path(['conversations'], {})
+    if not bot.memory.exists(['conversations', event.conv_id]):
+        bot.memory.set_by_path(['conversations', event.conv_id], {})
 
     if bot.memory.exists(['conversations', event.conv_id, 'tldr_echo']):
-        new_tldr = (bot.memory.get_by_path(['conversations', event.conv_id, 'tldr_echo']) + 1)%3
+        new_tldr = (bot.memory.get_by_path(['conversations', event.conv_id, 'tldr_echo']) + 1) % 3
     else:
         # No path was found. Is this your first setup?
         new_tldr = 0
@@ -42,7 +43,9 @@ def tldrecho(bot, event, *args):
 
     # Echo the current tldr setting
     message = '<b>TLDR echo setting for this hangout has been set to {0}.</b>'.format(tldr_echo_options[new_tldr])
-    logger.debug("{0} ({1}) has toggled the tldrecho in '{2}' to {3}".format(event.user.full_name, event.user.id_.chat_id, event.conv_id, tldr_echo_options[new_tldr]))
+    logger.debug(
+        "{0} ({1}) has toggled the tldrecho in '{2}' to {3}".format(event.user.full_name, event.user.id_.chat_id,
+                                                                    event.conv_id, tldr_echo_options[new_tldr]))
 
     yield from bot.coro_send_message(event.conv_id, message)
 
@@ -58,9 +61,9 @@ def tldr(bot, event, *args):
 
     # If no memory entry exists for the conversation, create it.
     if not bot.memory.exists(['conversations']):
-        bot.memory.set_by_path(['conversations'],{})
-    if not bot.memory.exists(['conversations',event.conv_id]):
-        bot.memory.set_by_path(['conversations',event.conv_id],{})
+        bot.memory.set_by_path(['conversations'], {})
+    if not bot.memory.exists(['conversations', event.conv_id]):
+        bot.memory.set_by_path(['conversations', event.conv_id], {})
 
     # Retrieve the current tldr echo status for the hangout.
     if bot.memory.exists(['conversations', event.conv_id, 'tldr_echo']):
@@ -71,7 +74,9 @@ def tldr(bot, event, *args):
     message, display = tldr_base(bot, event.conv_id, list(args))
 
     if display is True and tldr_echo_options[tldr_echo] is 'PM':
-        yield from bot.coro_send_to_user_and_conversation(event.user.id_.chat_id, event.conv_id, message, ("<i>{}, I've sent you the info in a PM</i>").format(event.user.full_name))
+        yield from bot.coro_send_to_user_and_conversation(event.user.id_.chat_id, event.conv_id, message,
+                                                          ("<i>{}, I've sent you the info in a PM</i>").format(
+                                                              event.user.full_name))
     else:
         yield from bot.coro_send_message(event.conv_id, message)
 
@@ -136,7 +141,6 @@ def tldr_base(bot, conv_id, parameters):
 
         return message, display
 
-
     conv_id_list = [conv_id]
 
     # Check to see if sync is active
@@ -150,7 +154,6 @@ def tldr_base(bot, conv_id, parameters):
                 for conv in sync_room_list:
                     if not conv in conv_id_list:
                         conv_id_list.append(conv)
-
 
     if parameters[0] == "clear":
         if len(parameters) == 2 and parameters[1].isdigit():
@@ -190,7 +193,7 @@ def tldr_base(bot, conv_id, parameters):
 
         return message, display
 
-    elif parameters[0]:  ## need a better looking solution here
+    elif parameters[0]:  # need a better looking solution here
         tldr = ' '.join(parameters)
         if tldr:
             # Add message to list

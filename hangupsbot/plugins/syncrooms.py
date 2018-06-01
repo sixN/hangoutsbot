@@ -1,7 +1,5 @@
 import aiohttp, asyncio, io, logging, os, time
-
 import hangups
-
 import plugins
 
 
@@ -25,12 +23,9 @@ def _initialise(bot):
     plugins.register_handler(_broadcast, type="sending")
     plugins.register_handler(_repeat, type="allmessages")
 
-    #_register_chatbridge_behaviour('userlist', _syncout_users)
+    # _register_chatbridge_behaviour('userlist', _syncout_users)
 
     plugins.register_admin_command(["syncusers"])
-
-    return []
-
     plugins.register_handler(_handle_syncrooms_membership_change, type="membership")
 
 

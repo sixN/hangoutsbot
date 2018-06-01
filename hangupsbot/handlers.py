@@ -10,7 +10,6 @@ import hangups
 import plugins
 from commands import command
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -29,23 +28,24 @@ class EventHandler:
         self._image_ids = {}
         self._executables = {}
 
-        self.pluggables = { "allmessages": [],
-                            "call": [],
-                            "membership": [],
-                            "message": [],
-                            "rename": [],
-                            "history": [],
-                            "sending":[],
-                            "typing": [],
-                            "watermark": [] }
+        self.pluggables = {"allmessages": [],
+                           "call": [],
+                           "membership": [],
+                           "message": [],
+                           "rename": [],
+                           "history": [],
+                           "sending": [],
+                           "typing": [],
+                           "watermark": [],
+                           "join_by_link": []}
 
-        bot.register_shared( 'reprocessor.attach_reprocessor',
-                             self.attach_reprocessor,
-                             forgiving=True )
+        bot.register_shared('reprocessor.attach_reprocessor',
+                            self.attach_reprocessor,
+                            forgiving=True)
 
-        bot.register_shared( 'chatbridge.behaviours',
-                             {},
-                             forgiving=True )
+        bot.register_shared('chatbridge.behaviours',
+                            {},
+                            forgiving=True)
 
     def register_handler(self, function, type="message", priority=50, extra_metadata=None):
         """
@@ -61,7 +61,7 @@ class EventHandler:
 
         # determine the actual handler function that will be registered
         _handler = function
-        if type in ["allmessages", "call", "membership", "message", "rename", "history", "typing", "watermark"]:
+        if type in ["allmessages", "call", "membership", "message", "rename", "history", "typing", "watermark", "join_by_link"]:
             if not asyncio.iscoroutine(function):
                 _handler = asyncio.coroutine(_handler)
         elif type in ["sending"]:
@@ -103,7 +103,7 @@ class EventHandler:
         if type is None:
             type = list(self.pluggables.keys())
         elif isinstance(type, str):
-            type = [ type ]
+            type = [type]
         elif isinstance(type, list):
             pass
         else:
@@ -122,7 +122,7 @@ class EventHandler:
                     logger.debug("deregister {} handler {}".format(t, h))
                     self.pluggables[t].remove(h)
 
-                    return # remove first encountered only
+                    return  # remove first encountered only
 
         if strict:
             raise ValueError("{} handler(s) {}".format(type, function))
@@ -150,9 +150,9 @@ class EventHandler:
         _id = self.register_reprocessor(callable)
         context_fragment = '<a href="' + self._prefix_reprocessor + _id + '"> </a>'
         if return_as_dict:
-            return { "id": _id,
-                     "callable": callable,
-                     "fragment": context_fragment }
+            return {"id": _id,
+                    "callable": callable,
+                    "fragment": context_fragment}
         else:
             return context_fragment
 
@@ -162,26 +162,26 @@ class EventHandler:
         """registers a shared object into bot.shared
         historically, this function was more lenient than the actual bot function it calls
         """
-        logger.debug(   "[LEGACY] plugins.register_shared()"
-                        " instead of handlers.register_object()")
+        logger.debug("[LEGACY] plugins.register_shared()"
+                     " instead of handlers.register_object()")
 
         self.bot.register_shared(id, objectref, forgiving=forgiving)
 
     def register_user_command(self, command_names):
-        logger.debug(   "[LEGACY] plugins.register_user_command()"
-                        " instead of handlers.register_user_command()")
+        logger.debug("[LEGACY] plugins.register_user_command()"
+                     " instead of handlers.register_user_command()")
 
         plugins.register_user_command(command_names)
 
     def register_admin_command(self, command_names):
-        logger.debug(   "[LEGACY] plugins.register_admin_command()"
-                        " instead of handlers.register_admin_command()")
+        logger.debug("[LEGACY] plugins.register_admin_command()"
+                     " instead of handlers.register_admin_command()")
 
         plugins.register_admin_command(command_names)
 
     def get_admin_commands(self, conversation_id):
-        logger.debug(   "[LEGACY] command.get_admin_commands()"
-                        " instead of handlers.get_admin_commands()")
+        logger.debug("[LEGACY] command.get_admin_commands()"
+                     " instead of handlers.get_admin_commands()")
 
         return command.get_admin_commands(self.bot, conversation_id)
 
@@ -260,11 +260,11 @@ class EventHandler:
             """map image ids to their public uris in absence of any fixed server api
                XXX: small memory leak over time as each id gets cached indefinitely"""
 
-            if( event.passthru
+            if (event.passthru
                     and "original_request" in event.passthru
                     and "image_id" in event.passthru["original_request"]
                     and event.passthru["original_request"]["image_id"]
-                    and len(event.conv_event.attachments) == 1 ):
+                    and len(event.conv_event.attachments) == 1):
 
                 _image_id = event.passthru["original_request"]["image_id"]
                 _image_uri = event.conv_event.attachments[0]
@@ -276,7 +276,7 @@ class EventHandler:
             """first occurence of an actual executable id needs to be handled as an event
                XXX: small memory leak over time as each id gets cached indefinitely"""
 
-            if( event.passthru and "executable" in event.passthru and event.passthru["executable"] ):
+            if (event.passthru and "executable" in event.passthru and event.passthru["executable"]):
                 if event.passthru["executable"] not in self._executables:
                     original_message = event.passthru["original_request"]["message"]
                     linked_hangups_user = event.passthru["original_request"]["user"]
@@ -312,15 +312,19 @@ class EventHandler:
 
         # check that a bot alias is used e.g. /bot
         if not event.text.split()[0].lower() in self.bot_command:
-            if self.bot.conversations.catalog[event.conv_id]["type"] == "ONE_TO_ONE" and self.bot.get_config_option('auto_alias_one_to_one'):
-                event.text = u" ".join((self.bot_command[0], event.text)) # Insert default alias if not already present
+            if self.bot.conversations.catalog[event.conv_id]["type"] == "ONE_TO_ONE" and self.bot.get_config_option(
+                    'auto_alias_one_to_one'):
+                event.text = u" ".join((self.bot_command[0], event.text))  # Insert default alias if not already present
             else:
                 return
 
         # Parse message
-        event.text = event.text.replace(u'\xa0', u' ') # convert non-breaking space in Latin1 (ISO 8859-1)
+        # First do some unicode cleanup - convert non-breaking spaces and smart quotes to ascii
+        event.text = event.text.replace(u'\xa0', u' ') \
+            .replace(u'\u201c', '"') \
+            .replace(u'\u201d', '"')
         try:
-            line_args = shlex.split(event.text, posix=False)
+            line_args = shlex.split(event.text)
         except Exception as e:
             logger.exception(e)
             yield from self.bot.coro_send_message(event.conv, _("{}: {}").format(
@@ -335,7 +339,7 @@ class EventHandler:
                 yield from self.bot.coro_send_message(event.conv, _('{}: Missing parameter(s)').format(
                     event.user.full_name))
             return
-        
+
         commands = command.get_available_commands(self.bot, event.user.id_.chat_id, event.conv_id)
 
         supplied_command = line_args[1].lower()
@@ -378,6 +382,11 @@ class EventHandler:
         yield from self.run_pluggable_omnibus("call", self.bot, event, command)
 
     @asyncio.coroutine
+    def handle_join_by_link_status(self, event):
+        """handle link sharing status change"""
+        yield from self.run_pluggable_omnibus("join_by_link", self.bot, event, command)
+
+    @asyncio.coroutine
     def handle_typing_notification(self, event):
         """handle changes in typing state"""
         yield from self.run_pluggable_omnibus("typing", self.bot, event, command)
@@ -393,9 +402,9 @@ class EventHandler:
             try:
                 for function, priority, plugin_metadata in self.pluggables[name]:
                     message = ["{}: {}.{}".format(
-                                name,
-                                plugin_metadata["module.path"],
-                                function.__name__)]
+                        name,
+                        plugin_metadata["module.path"],
+                        function.__name__)]
 
                     try:
                         """accepted handler signatures:
@@ -435,6 +444,7 @@ class EventHandler:
             except:
                 raise
 
+
 class HandlerBridge:
     """shim for xmikosbot handler decorator"""
 
@@ -446,7 +456,7 @@ class HandlerBridge:
         """Decorator for registering event handler"""
 
         # make compatible with this bot fork
-        scaled_priority = priority * 10 # scale for compatibility - xmikos range 1 - 10
+        scaled_priority = priority * 10  # scale for compatibility - xmikos range 1 - 10
         if event is hangups.ChatMessageEvent:
             event_type = "message"
         elif event is hangups.MembershipChangeEvent:
@@ -456,7 +466,7 @@ class HandlerBridge:
         elif event is hangups.OTREvent:
             event_type = "history"
         elif type(event) is str:
-            event_type = str # accept all kinds of strings, just like register_handler
+            event_type = str  # accept all kinds of strings, just like register_handler
         else:
             raise ValueError("unrecognised event {}".format(event))
 
@@ -476,5 +486,6 @@ class HandlerBridge:
             return wrapper(args[0])
         else:
             return wrapper
+
 
 handler = HandlerBridge()

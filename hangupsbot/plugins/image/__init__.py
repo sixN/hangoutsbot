@@ -93,7 +93,6 @@ def image_upload_single(image_uri):
     try:
         r = yield from _externals["ClientSession"].get(image_uri)
         content_type = r.headers['Content-Type']
-
         image_handling = False # must == True if valid image, can contain additonal directives
 
         """image handling logic for specific image types - if necessary, guess by extension"""
@@ -102,6 +101,13 @@ def image_upload_single(image_uri):
             if content_type == "image/webp":
                 image_handling = "image_convert_to_png"
             else:
+                type = filename.split(".")[-1].lower() or content_type.split("/")[1]
+                logger.info("the file type is "+type)
+
+                if type == "png":
+                    filename=filename+".png"
+                elif type in ("jpg", "jpeg", "jpe"):
+                    filename = filename + ".jpg"
                 image_handling = "standard"
 
         elif content_type == "application/octet-stream":
@@ -109,7 +115,7 @@ def image_upload_single(image_uri):
 
             if ext in ("jpg", "jpeg", "jpe", "jif", "jfif", "gif", "png"):
                 image_handling = "standard"
-            elif ext in ("webp"):
+            elif ext in "webp":
                 image_handling = "image_convert_to_png"
 
         if image_handling:
@@ -128,7 +134,7 @@ def image_upload_single(image_uri):
             logger.warning("not image/image-like, filename={}, headers={}".format(filename, r.headers))
             return False
 
-    except (aiohttp_clienterror) as exc:
+    except aiohttp_clienterror as exc:
         logger.warning("failed to get {} - {}".format(filename, exc))
         return False
 
