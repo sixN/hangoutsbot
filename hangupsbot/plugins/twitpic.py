@@ -23,8 +23,8 @@ dcap["phantomjs.page.settings.userAgent"] = (
 
 
 def _initialise(bot):
-    plugins.register_user_command(["screenshot"])
-    plugins.register_admin_command(["seturl", "clearurl"])
+  plugins.register_admin_command(["twitterkey", "twittersecret", 'twitterconfig'])
+  plugins.register_handler(_watch_twitter_link, type="message")
 
 
 @asyncio.coroutine
@@ -36,7 +36,7 @@ def _open_file(name):
 @asyncio.coroutine
 def _screencap(browser, url, filename):
     logger.info("screencapping {} and saving as {}".format(url, filename))
-    browser.set_window_size(1280, 800)
+    #browser.set_window_size(1280, 800)
     browser.get(url)
     yield from asyncio.sleep(5)
     loop = asyncio.get_event_loop()
@@ -85,6 +85,7 @@ def clearurl(bot, event, *args):
 def screenshot(bot, event, *args):
     """get a screenshot of a user provided URL or the default URL of the hangout. 
     """
+    print("this is running")
     if _externals["running"]:
         yield from bot.coro_send_message(event.conv_id, "<i>processing another request, try again shortly</i>")
         return
@@ -136,3 +137,67 @@ def screenshot(bot, event, *args):
             logger.exception("upload failed".format(url))
         finally:
             _externals["running"] = False
+
+@asyncio.coroutine
+def _watch_twitter_link(bot, event, command):
+  if event.user.is_self:
+    return
+
+  m = re.search("https?://(?:www\.)?twitter.com/([a-zA-Z0-9_]{1,15})/status/([0-9]+)(?=\D)?", event.text, re.IGNORECASE)
+  # m = re.search("https?://(?:www\.)?twitter.com/([a-zA-Z0-9_]{1,15})/status/([0-9]+\b", event.text, re.IGNORECASE)
+  if not m:
+    return
+
+  # try:
+  # key = bot.memory.get_by_path(['twitter', 'key'])
+  # secret = bot.memory.get_by_path(['twitter', 'secret'])
+  user_id = m.group(1)
+  tweet_id = m.group(2)
+  url = f"file://localhost/Users/Noah/Downloads/junk.html?usr={user_id}&tid={tweet_id}"
+  """get a screenshot of a user provided URL or the default URL of the hangout. 
+  """
+  print("this is running")
+  if _externals["running"]:
+      yield from bot.coro_send_message(event.conv_id, "<i>processing another request, try again shortly</i>")
+      return
+
+  else:
+      _externals["running"] = True
+      
+      if not re.match(r'^[a-zA-Z]+://', url):
+          url = 'http://' + url
+      filename = event.conv_id + "." + str(time.time()) +".png"
+      filepath = tempfile.NamedTemporaryFile(prefix=event.conv_id, suffix=".png", delete=False).name
+      logger.debug("temporary screenshot file: {}".format(filepath))
+
+      try:
+          browser = webdriver.PhantomJS(desired_capabilities=dcap,service_log_path=os.path.devnull)
+      except selenium.common.exceptions.WebDriverException as e:
+          yield from bot.coro_send_message(event.conv, "<i>phantomjs could not be started - is it installed?</i>".format(e))
+          _externals["running"] = False
+          return
+
+      try:
+          loop = asyncio.get_event_loop()
+          image_data = yield from _screencap(browser, url, filepath)
+      except Exception as e:
+          yield from bot.coro_send_message(event.conv_id, "<i>error getting screenshot</i>")
+          logger.exception("screencap failed".format(url))
+          _externals["running"] = False
+          return
+          
+      try:
+          try:
+              image_id = yield from bot.call_shared('image_upload_raw', image_data, filename=filename)
+          except KeyError:
+              logger.warning('image plugin not loaded - using legacy code')
+              image_id = yield from bot._client.upload_image(image_data, filename=filename)
+          #yield from bot._client.sendchatmessage(event.conv.id_, None, image_id=image_id)
+          yield from bot.coro_send_message(event.conv.id_, "", image_id=image_id)
+      except Exception as e:
+          yield from bot.coro_send_message(event.conv_id, "<i>error uploading screenshot</i>")
+          logger.exception("upload failed".format(url))
+      finally:
+          _externals["running"] = False
+
+
