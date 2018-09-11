@@ -47,11 +47,29 @@ def get_scoreboard_short(league, final=False):
 def get_scoreboard(league):
     #Gets current week's scoreboard
     matchups = league.scoreboard()
-    score = ['%s %.2f - %.2f %s' % (i.home_team.team_name, i.home_score,
-             i.away_score, i.away_team.team_name) for i in matchups
-             if i.away_team]
-    text = ['Score Update'] + score
-    return '\n'.join(text)
+    score = ""
+    for m in matchups:
+        if round(m.home_score) == round(m.away_score):
+            score += "{h:s} and {a:s} are tied at {h_s:.0f}\n\n".format(h=m.home_team.team_name, a=m.away_team.team_name, h_s=m.home_score, a_s=m.away_score)
+        if m.home_score > m.away_score:
+            score += "<b>{h:s} ({h_s:.0f})</b> leads {a:s} ({a_s:.0f})\n\n".format(h=m.home_team.team_name, a=m.away_team.team_name, h_s=m.home_score, a_s=m.away_score)
+        elif m.home_score < m.away_score:
+            score += "{h:s} ({h_s:.0f}) trails <b>{a:s} ({a_s:.0f})</b>\n\n".format(h=m.home_team.team_name, a=m.away_team.team_name, h_s=m.home_score, a_s=m.away_score)
+        else:
+            score = u"¯\_(ツ)_/¯"
+    text = '<b><u>Score Update</b></u>\n' + score
+    return score
+
+"""
+    for m in matchups:
+        if m.home_score > m.away_score:
+            score += "<b>{h:s} ({hs:.0f})</b> leads {away:s} ({as:.0f})\n  {home_s:.2f} to {away_s:.2f}\n".format(m.home_team.team_name, m.away_team.team_name, m.home_score, m.away_score)
+        elif m.home_score < m.away_score:
+            score += "{:s} trails <b>{:s}</b>\n  {:.2f} to {:.2f}\n".format(m.home_team.team_name, m.away_team.team_name, m.home_score, m.away_score)
+        else:
+            score += "{:s} and {:s}\n  are tied at {:.2f}\n".format(m.home_team.team_name, m.away_team.team_name, m.home_score)
+    text = '<b><u>Score Update</b></u>\n' + score
+"""
 
 def get_matchups(league):
     #Gets current week's Matchups
@@ -152,7 +170,7 @@ def ff(bot, event, function="get_scoreboard"):
 
     cookie = {'SWID' : r'{ABDE2A2B-61CF-491D-A8A1-AEF483D70ED2}','espn_s2' : r'AEBHc8GGRqHcdMmTBoLP2BgFl2Yx3jW%2FiXdNW7dfLfujoWJP1w7jgp%2BTO1kpimKKH7YbF%2F6XMWEfnSmgL0NF2hVUlyEvqp2lbBzAVpP%2F4SX7C%2BFz7DLl1OLtayI%2BmyPD%2F4fdmgz43UsT66Nz33%2FswAYOHShHKk%2BjwZWMIho9soQxTsBl9q4V3VsNS80upuJFQdmhkwesB9%2BUfFwlrHzFEJ9z%2F9Ps3z8Ghpz9ziqWdOQBNFJ%2BKAfa7BQCsh8IUtF6Vt8PxjjcmduJIyYOZdyOk%2FLX'}
     league_id = 591765
-    
+
     league = League(league_id, year, cookie['espn_s2'], cookie['SWID'])
 
     test = False
