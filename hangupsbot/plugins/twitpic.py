@@ -153,7 +153,7 @@ def _watch_twitter_link(bot, event, command):
   # secret = bot.memory.get_by_path(['twitter', 'secret'])
   user_id = m.group(1)
   tweet_id = m.group(2)
-  url = f"file://localhost/Users/Noah/Downloads/junk.html?usr={user_id}&tid={tweet_id}"
+  url = f"file://localhost/opt/hangoutsbot/twtr.html?usr={user_id}&tid={tweet_id}"
   """get a screenshot of a user provided URL or the default URL of the hangout. 
   """
   print("this is running")
