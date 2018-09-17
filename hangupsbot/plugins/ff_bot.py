@@ -44,9 +44,20 @@ def get_scoreboard_short(league, final=False):
     text = ['Score Update'] + score
     return '\n'.join(text)
 
-def get_scoreboard(league):
+def get_scoreboard_final():
+    matchups = league.scoreboard(week=pranks_week(league))
+    score = ['%s %.2f - %.2f %s' % (i.home_team.team_abbrev, i.home_score,
+             i.away_score, i.away_team.team_abbrev) for i in matchups
+             if i.away_team]
+    text = ['Score Update'] + score
+    return '\n'.join(text)
+
+def get_scoreboard(league, final=False):
     #Gets current week's scoreboard
-    matchups = league.scoreboard()
+    if not final:
+        matchups = league.scoreboard()
+    else:
+        matchups = league.scoreboard(week=pranks_week(league))
     score = ""
     for m in matchups:
         if round(m.home_score) == round(m.away_score):
@@ -238,7 +249,8 @@ def _initialise(bot):
     try:
         myTimezone = bot.get_config_option("TIMEZONE")
     except:
-        myTimezone='America/New_York'
+        myTimezone='America/Los_Angeles'
+    print("timezone {}".format(myTimezone))
 
     sched = AsyncIOScheduler()
     #sched = BlockingScheduler(job_defaults={'misfire_grace_time': 15*60})
@@ -249,6 +261,16 @@ def _initialise(bot):
     #trophies:                           tuesday morning at 7:30am.
     #score update:                       friday, monday, and tuesday morning at 7:30am.
     #score update:                       sunday at 1pm, 4pm, 8pm.
+
+    sched.add_job(ff, 'cron', [bot, None, 'get_power_rankings'], id='power_rankings',
+        day_of_week='sun', hour=20, minute=4, start_date=ff_start_date, end_date=ff_end_date,
+        timezone=myTimezone, replace_existing=True)
+    sched.add_job(ff, 'cron', [bot, None, 'get_matchups'], id='power_rankings',
+        day_of_week='sun', hour=20, minute=5, start_date=ff_start_date, end_date=ff_end_date,
+        timezone=myTimezone, replace_existing=True)
+    sched.add_job(ff, 'cron', [bot, None, 'get_close_scores'], id='power_rankings',
+        day_of_week='sun', hour=20, minute=6, start_date=ff_start_date, end_date=ff_end_date,
+        timezone=myTimezone, replace_existing=True)
 
     sched.add_job(ff, 'cron', [bot, 'get_power_rankings'], id='power_rankings',
         day_of_week='sun', hour=19, minute=0, start_date=ff_start_date, end_date=ff_end_date,
